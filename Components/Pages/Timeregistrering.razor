@@ -5,10 +5,13 @@
 @using DugnadApp.Data
 @inject DugnadDbContext DbContext
 
-<h2 class="text-center">Dugnader i sameiet</h2>
-<h4>Registrer dugnadstimer</h4>
-
+<h2 class="text-center">Registrering av dugnadstimer i sameiet</h2>
 <div class="mb-3">
+    @if (NyDeltakelse.BeboerId > 0)
+    {
+        <label class="form-label fw-bold">Navn</label>
+    }
+
     <select class="form-select" @bind="NyDeltakelse.BeboerId">
         <option value="0">-- Velg navn --</option>
 
@@ -20,6 +23,11 @@
 </div>
 
 <div class="mb-3">
+    @if (NyDeltakelse.DugnadId > 0)
+    {
+        <label class="form-label fw-bold">Dugnad</label>
+    }
+
     <select class="form-select" @bind="NyDeltakelse.DugnadId">
         <option value="0">-- Velg dugnad --</option>
 
@@ -33,7 +41,7 @@
 @if (ValgtDugnadKreverBeskrivelse)
 {
     <div class="mb-3">
-        <label class="form-label">
+        <label class="form-label fw-bold">
             Beskriv hva du har gjort
         </label>
 
@@ -43,6 +51,11 @@
 }
 
 <div class="mb-3">
+    @if (NyDeltakelse.Timer > 0)
+    {
+        <label class="form-label fw-bold">Timer</label>
+    }
+
     <select class="form-select" @bind="NyDeltakelse.Timer">
         <option value="0">-- Velg timer --</option>
         <option value="0,5">0,5 time</option>

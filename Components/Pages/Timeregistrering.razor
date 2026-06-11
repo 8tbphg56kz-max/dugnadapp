@@ -1,0 +1,164 @@
+﻿@page "/timeregistrering"
+
+@using Microsoft.EntityFrameworkCore
+@using DugnadApp.Models
+@using DugnadApp.Data
+@inject DugnadDbContext DbContext
+
+<h2 class="text-center">Dugnader i sameiet</h2>
+<h4>Registrer dugnadstimer</h4>
+
+<div class="mb-3">
+    <select class="form-select" @bind="NyDeltakelse.BeboerId">
+        <option value="0">-- Velg navn --</option>
+
+        @foreach (var beboer in Beboere)
+        {
+            <option value="@beboer.Id">@beboer.Etternavn @beboer.Fornavn</option>
+        }
+    </select>
+</div>
+
+<div class="mb-3">
+    <select class="form-select" @bind="NyDeltakelse.DugnadId">
+        <option value="0">-- Velg dugnad --</option>
+
+        @foreach (var dugnad in Dugnader)
+        {
+            <option value="@dugnad.Id">@dugnad.Navn</option>
+        }
+    </select>
+</div>
+
+@if (ValgtDugnadKreverBeskrivelse)
+{
+    <div class="mb-3">
+        <label class="form-label">
+            Beskriv hva du har gjort
+        </label>
+
+        <InputText class="form-control"
+                   @bind-Value="NyDeltakelse.Beskrivelse" />
+    </div>
+}
+
+<div class="mb-3">
+    <select class="form-select" @bind="NyDeltakelse.Timer">
+        <option value="0">-- Velg timer --</option>
+        <option value="0,5">0,5 time</option>
+        <option value="1">1,0 time</option>
+        <option value="1,5">1,5 time</option>
+        <option value="2">2,0 timer</option>
+        <option value="2,5">2,5 timer</option>
+        <option value="3">3,0 timer</option>
+        <option value="3,5">3,5 timer</option>
+        <option value="4">4,0 timer</option>
+        <option value="4,5">4,5 timer</option>
+        <option value="5">5,0 timer</option>
+        <option value="5,5">5,5 timer</option>
+        <option value="6">6,0 timer</option>
+    </select>
+</div>
+
+<button class="btn btn-primary"
+        @onclick="Lagre"
+        disabled="@(!KanLagre)">
+    Registrer
+</button>
+
+@if (!string.IsNullOrEmpty(Melding))
+{
+    <div class="alert alert-success mt-3">
+        @Melding
+    </div>
+}
+
+
+@code {
+    private List<Beboer> Beboere = new();
+
+    private List<Dugnad> Dugnader = new();
+
+    private Deltakelse NyDeltakelse = new();
+
+    private string Melding = "";
+
+    private bool KanLagre =>
+    NyDeltakelse.BeboerId > 0 &&
+    NyDeltakelse.DugnadId > 0 &&
+    NyDeltakelse.Timer > 0;
+
+    private bool ValgtDugnadKreverBeskrivelse =>
+   Dugnader.FirstOrDefault(d => d.Id == NyDeltakelse.DugnadId)
+       ?.KreverBeskrivelse ?? false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Beboere = await DbContext.Beboere
+            .OrderBy(b => b.Etternavn)
+            .ThenBy(b => b.Fornavn)
+            .ToListAsync();
+
+        Dugnader = await DbContext.Dugnader
+            .Where(d => d.Aktiv)
+            .OrderBy(d => d.Navn)
+            .ToListAsync();
+    }   
+
+    private async Task Lagre()
+    {
+        Melding = $"Timer={NyDeltakelse.Timer}";
+        return;
+
+        if (NyDeltakelse.BeboerId == 0 ||
+            NyDeltakelse.DugnadId == 0 ||
+            NyDeltakelse.Timer == 0)
+        {
+            Melding = "Alle felter må fylles ut.";
+            return;
+        }
+
+        if (ValgtDugnadKreverBeskrivelse &&
+    string.IsNullOrWhiteSpace(NyDeltakelse.Beskrivelse))
+        {
+            Melding = "Beskrivelse må fylles ut.";
+            return;
+        }
+
+        NyDeltakelse.RegistrertDato = DateTime.UtcNow;
+
+        DbContext.Deltakelser.Add(NyDeltakelse);
+
+        await DbContext.SaveChangesAsync();
+
+        var dugnadNavn = Dugnader
+    .FirstOrDefault(d => d.Id == NyDeltakelse.DugnadId)?.Navn;
+
+        var beboer = Beboere
+            .FirstOrDefault(b => b.Id == NyDeltakelse.BeboerId);
+
+        var beboerNavn = $"{beboer?.Fornavn}";
+
+        var totaltAntallTimer = DbContext.Deltakelser
+            .Where(d => d.BeboerId == NyDeltakelse.BeboerId)
+            .Sum(d => d.Timer);
+
+        Melding = $"Takk {beboerNavn}! " +
+            $"{NyDeltakelse.Timer} timer er registrert på '{dugnadNavn}'. " +
+            $"Du har nå registrert totalt {totaltAntallTimer.ToString()} dugnadstimer.";
+
+        NyDeltakelse = new Deltakelse();
+
+        StateHasChanged();
+
+        await Task.Delay(10000);
+
+        Melding = "";
+
+        StateHasChanged();
+
+        // Nullstill skjemaet
+        NyDeltakelse = new Deltakelse();
+    }   
+    
+}

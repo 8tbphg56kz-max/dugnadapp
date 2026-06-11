@@ -1,0 +1,134 @@
+﻿@page "/admin/importbeboere"
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore;
+@using DugnadApp.Models
+@using DugnadApp.Data
+@inject DugnadDbContext Db
+
+<PageTitle>Importer beboere</PageTitle>
+
+<h3>Importer beboere fra CSV</h3>
+<p>@Status</p>
+
+<InputFile OnChange="HandleFileSelected" accept=".csv" />
+
+@if (Beboere.Any())
+{
+    <h4>Forhåndsvisning</h4>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Seksjonsnr</th>
+                <th>Fornavn</th>
+                <th>Etternavn</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var beboer in Beboere)
+            {
+                <tr>
+                    <td>@beboer.Seksjonsnr</td>
+                    <td>@beboer.Fornavn</td>
+                    <td>@beboer.Etternavn</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Beboere.Any())
+    {
+        <button class="btn btn-primary" @onclick="ImporterTilDatabase">
+            Importer til database
+        </button>
+    }
+}
+
+@code {
+
+    private List<ImportBeboer> Beboere = new();
+    private string Status = "";
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+
+            Status = $"Leser fil: {file.Name}";
+
+            using var stream = file.OpenReadStream();
+            using var reader = new StreamReader(stream);
+
+            bool førsteLinje = true;
+            string? line;
+
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                if (førsteLinje)
+                {
+                    førsteLinje = false;
+                    continue;
+                }
+
+                var values = line.Split(';');
+
+                if (values.Length >= 3)
+                {
+                    Beboere.Add(new ImportBeboer
+                    {
+                        Seksjonsnr = values[0],
+                        Fornavn = values[1],
+                        Etternavn = values[2]
+                    });
+                }
+            }
+
+            Status = $"Importert {Beboere.Count} beboere";
+        }
+        catch (Exception ex)
+        {
+            Status = $"Feil: {ex.Message}";
+        }
+    }
+
+    public class ImportBeboer
+    {
+        public string Seksjonsnr { get; set; } = "";
+        public string Fornavn { get; set; } = "";
+        public string Etternavn { get; set; } = "";
+    }
+
+    private async Task ImporterTilDatabase()
+    {
+        foreach (var beboer in Beboere)
+        {
+            int seksjonsnr = int.Parse(beboer.Seksjonsnr);
+
+            var eksisterende = await Db.Beboere
+        .FirstOrDefaultAsync(b =>
+        b.Seksjonsnr == seksjonsnr &&
+        b.Fornavn == beboer.Fornavn &&
+        b.Etternavn == beboer.Etternavn);
+
+            if (eksisterende == null)
+            {
+                Db.Beboere.Add(new Beboer
+                {
+                    Seksjonsnr = seksjonsnr,
+                    Fornavn = beboer.Fornavn,
+                    Etternavn = beboer.Etternavn
+                });
+            }
+            else
+            {
+                eksisterende.Fornavn = beboer.Fornavn;
+                eksisterende.Etternavn = beboer.Etternavn;
+            }
+        }
+
+        await Db.SaveChangesAsync();
+
+        Status = $"Importert/oppdatert {Beboere.Count} beboere";
+    }
+}

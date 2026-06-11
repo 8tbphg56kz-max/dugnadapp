@@ -1,0 +1,12 @@
+C:\Publish\DugnadApp\DugnadApp.exe
+C:\Publish\DugnadApp\appsettings.Development.json
+C:\Publish\DugnadApp\appsettings.json
+C:\Publish\DugnadApp\DugnadApp.dll
+C:\Publish\DugnadApp\DugnadApp.runtimeconfig.json
+C:\Publish\DugnadApp\DugnadApp.pdb
+C:\Publish\DugnadApp\Microsoft.EntityFrameworkCore.dll
+C:\Publish\DugnadApp\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Publish\DugnadApp\Microsoft.EntityFrameworkCore.Relational.dll
+C:\Publish\DugnadApp\Npgsql.dll
+C:\Publish\DugnadApp\Npgsql.EntityFrameworkCore.PostgreSQL.dll
+C:\Publish\DugnadApp\DugnadApp.deps.json

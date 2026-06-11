@@ -1,0 +1,45 @@
+﻿@page "/beboere"
+
+@using DugnadApp.Models
+@using DugnadApp.Data
+@using Microsoft.EntityFrameworkCore
+@inject DugnadDbContext Db
+
+<h3>Beboere</h3>
+
+@if (beboere == null)
+{
+    <p>Laster...</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Fornavn</th>
+                <th>Etternavn</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var b in beboere)
+            {
+                <tr>
+                    <td>@b.Id</td>
+                     <td>@b.Fornavn</td>
+                    <td>@b.Etternavn</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private List<Beboer>? beboere;
+
+    protected override async Task OnInitializedAsync()
+    {
+        beboere = await Db.Beboere.ToListAsync();
+    }
+}

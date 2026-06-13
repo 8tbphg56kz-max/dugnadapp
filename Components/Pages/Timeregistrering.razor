@@ -5,14 +5,31 @@
 @using DugnadApp.Data
 @inject DugnadDbContext DbContext
 
-<h2 class="text-center">Registrering av dugnadstimer i sameiet</h2>
+<div class="d-flex align-items-center gap-3 mb-4">
+
+    <div>
+        <h2 class="fw-bold mb-1">
+            Registrering av <span class="dugnad-gronn">dugnadstimer</span>
+        </h2>
+
+        <p class="text-muted mb-0">
+            Fyll ut skjemaet under for å registrere din dugnadsinnsats
+        </p>
+    </div>
+
+    <img src="/Images/Startside.png"
+         alt="DugnadApp"
+         class="img-fluid"
+         style="max-width:120px;" />
+</div>
+
 <div class="mb-3">
     @if (NyDeltakelse.BeboerId > 0)
     {
-        <label class="form-label fw-bold">Navn</label>
+        <label class="form-label fw-bold label-navn">Navn</label>
     }
 
-    <select class="form-select" @bind="NyDeltakelse.BeboerId">
+        <select class="form-select navn" @bind="NyDeltakelse.BeboerId">
         <option value="0">-- Velg navn --</option>
 
         @foreach (var beboer in Beboere)
@@ -25,10 +42,10 @@
 <div class="mb-3">
     @if (NyDeltakelse.DugnadId > 0)
     {
-        <label class="form-label fw-bold">Dugnad</label>
+        <label class="form-label fw-bold label-dugnad">Dugnad</label>
     }
 
-    <select class="form-select" @bind="NyDeltakelse.DugnadId">
+        <select class="form-select dugnad" @bind="NyDeltakelse.DugnadId">
         <option value="0">-- Velg dugnad --</option>
 
         @foreach (var dugnad in Dugnader)
@@ -41,11 +58,11 @@
 @if (ValgtDugnadKreverBeskrivelse)
 {
     <div class="mb-3">
-        <label class="form-label fw-bold">
+          <label class="form-label fw-bold label-beskrivelse">
             Beskriv hva du har gjort
         </label>
 
-        <InputText class="form-control"
+        <InputText class="form-select beskrivelse"
                    @bind-Value="NyDeltakelse.Beskrivelse" />
     </div>
 }
@@ -53,10 +70,10 @@
 <div class="mb-3">
     @if (NyDeltakelse.Timer > 0)
     {
-        <label class="form-label fw-bold">Timer</label>
+        <label class="form-label fw-bold label-timer">Velg timer</label>
     }
 
-    <select class="form-select" @bind="NyDeltakelse.Timer">
+        <select class="form-select timer" @bind="NyDeltakelse.Timer">
         <option value="0">-- Velg timer --</option>
         <option value="0,5">0,5 time</option>
         <option value="1">1,0 time</option>
@@ -73,10 +90,10 @@
     </select>
 </div>
 
-<button class="btn btn-primary"
+<button class="btn btn-success text-white"
         @onclick="Lagre"
         disabled="@(!KanLagre)">
-    Registrer
+    Registrer →
 </button>
 
 @if (!string.IsNullOrEmpty(Melding))

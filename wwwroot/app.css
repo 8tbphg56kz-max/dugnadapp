@@ -58,3 +58,55 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.form-select.navn {
+    border: 2px solid #52c7b8;
+}
+
+.form-select.dugnad {
+    border: 2px solid #7db7ff;
+}
+
+.form-control.beskrivelse,
+.form-select.beskrivelse {
+    border: 2px solid #8b5cf6;
+}
+
+.form-select.timer {
+    border: 2px solid #f0c75e;
+}
+
+.label-navn {
+    color: #52c7b8;
+}
+
+.label-dugnad {
+    color: #7db7ff;
+}
+
+.label-beskrivelse {
+    color: #8b5cf6;
+}
+
+.label-timer {
+    color: #f0c75e;
+}
+
+.btn-registrer {
+    background-color: #20c997;
+    border-color: #20c997;
+    border-radius: 12px;
+    min-height: 48px;
+    font-weight: 600;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+    .btn-registrer:hover {
+        background-color: #1baa80;
+        border-color: #1baa80;
+    }
+
+.dugnad-gronn {
+    color: var(--bs-success);
+}

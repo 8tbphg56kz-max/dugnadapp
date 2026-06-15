@@ -8,34 +8,37 @@
 @inject EmailService EmailService
 @inject DugnadDbContext DbContext
 
-<PageTitle>Logg inn</PageTitle>
+<PageTitle>Innlogging</PageTitle>
 
-<h3>Logg inn</h3>
+<h3>Innlogging</h3>
 
 <EditForm Model="@model" OnValidSubmit="SendLoginLink">
     <DataAnnotationsValidator />
 
     <div class="mb-3">
-        <label>E-post</label>
         <InputText class="form-control"
-                   @bind-Value="model.Epost" />
+                   @bind-Value="model.Epost"
+                   placeholder="Skriv inn e-postadressen din" />
     </div>
 
     <button class="btn btn-success" type="submit">
-        Send innloggingslenke
+        Logg inn
     </button>
 </EditForm>
 
-@if (!string.IsNullOrWhiteSpace(Melding))
+@if (!string.IsNullOrWhiteSpace(SuksessMelding))
 {
-    @if (!string.IsNullOrWhiteSpace(Melding))
-    {
-        <div class="alert alert-info mt-3">
-            <a href="@Melding" target="_blank">
-                Klikk her for å logge inn
-            </a>
-        </div>
-    }
+    <div class="alert alert-success mt-3">
+        ✅ E-post sendt! Sjekk innboksen din og klikk på lenken i e-posten.
+        Dersom e-posten ikke dukker opp innen et minutt, sjekk søppelpost.
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(FeilMelding))
+{
+    <div class="alert alert-danger mt-3">
+        ❌ @FeilMelding
+    </div>
 }
 
 @code
@@ -43,6 +46,8 @@
     private LoginModel model = new();
 
     private string? Melding;
+    private string? SuksessMelding;
+    private string? FeilMelding;
 
     private async Task SendLoginLink()
     {
@@ -50,11 +55,15 @@
             .FirstOrDefaultAsync(x => x.Epost == model.Epost);
 
         if (beboer == null)
-        {
-            Melding = "Fant ingen beboer med denne e-postadressen.";
-            return;
-        }
+{
+    FeilMelding = "Fant ingen beboer med denne e-postadressen.";
+    SuksessMelding = null;
 
+    _ = Task.Run(() => SkjulMeldingEtter5Sekunder(false));
+
+    return;
+}
+               
         var token = Convert.ToBase64String(
             RandomNumberGenerator.GetBytes(32));
 
@@ -91,6 +100,26 @@ Lenken er gyldig i 15 minutter.
 Med vennlig hilsen
 DugnadApp
 """);
+
+        SuksessMelding = "E-post sendt!";
+        FeilMelding = null;
+
+        _ = Task.Run(() => SkjulMeldingEtter5Sekunder(true));
+    }
+
+    private async Task SkjulMeldingEtter5Sekunder(bool tømEpostfelt)
+    {
+        await Task.Delay(8000);
+
+        SuksessMelding = null;
+        FeilMelding = null;
+
+        if (tømEpostfelt)
+        {
+            model.Epost = string.Empty;
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     public class LoginModel

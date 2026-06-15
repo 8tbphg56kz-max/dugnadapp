@@ -1,0 +1,102 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using DugnadApp.Data
+@using DugnadApp.Models
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Cryptography
+@using DugnadApp.Services
+@inject EmailService EmailService
+@inject DugnadDbContext DbContext
+
+<PageTitle>Logg inn</PageTitle>
+
+<h3>Logg inn</h3>
+
+<EditForm Model="@model" OnValidSubmit="SendLoginLink">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label>E-post</label>
+        <InputText class="form-control"
+                   @bind-Value="model.Epost" />
+    </div>
+
+    <button class="btn btn-success" type="submit">
+        Send innloggingslenke
+    </button>
+</EditForm>
+
+@if (!string.IsNullOrWhiteSpace(Melding))
+{
+    @if (!string.IsNullOrWhiteSpace(Melding))
+    {
+        <div class="alert alert-info mt-3">
+            <a href="@Melding" target="_blank">
+                Klikk her for å logge inn
+            </a>
+        </div>
+    }
+}
+
+@code
+{
+    private LoginModel model = new();
+
+    private string? Melding;
+
+    private async Task SendLoginLink()
+    {
+        var beboer = await DbContext.Beboere
+            .FirstOrDefaultAsync(x => x.Epost == model.Epost);
+
+        if (beboer == null)
+        {
+            Melding = "Fant ingen beboer med denne e-postadressen.";
+            return;
+        }
+
+        var token = Convert.ToBase64String(
+            RandomNumberGenerator.GetBytes(32));
+
+        var loginToken = new LoginToken
+        {
+            BeboerId = beboer.Id,
+            Token = token,
+            Opprettet = DateTime.UtcNow,
+            Utloper = DateTime.UtcNow.AddMinutes(15),
+            Brukt = false
+        };
+
+        DbContext.LoginTokens.Add(loginToken);
+
+        await DbContext.SaveChangesAsync();
+
+        var url =
+     $"https://localhost:7061/magic-login?token={Uri.EscapeDataString(token)}";
+
+        await EmailService.SendAsync(
+    model.Epost,
+    "Innlogging til DugnadApp",
+    $"""
+Hei!
+
+Du har bedt om innlogging til DugnadApp.
+
+Klikk på lenken under for å logge inn:
+
+{url}
+
+Lenken er gyldig i 15 minutter.
+
+Med vennlig hilsen
+DugnadApp
+""");
+    }
+
+    public class LoginModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Epost { get; set; } = "";
+    }
+}

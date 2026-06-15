@@ -15,5 +15,6 @@ namespace DugnadApp.Data
         public DbSet<Leilighet> Leiligheter { get; set; }
         public DbSet<Dugnad> Dugnader { get; set; }
         public DbSet<Deltakelse> Deltakelser { get; set; }
+        public DbSet<LoginToken> LoginTokens { get; set; }
     }
 }

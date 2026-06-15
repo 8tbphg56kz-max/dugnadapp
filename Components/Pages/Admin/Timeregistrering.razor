@@ -1,14 +1,9 @@
-﻿@page "/timeregistrering"
-@attribute [Authorize]
+﻿@page "/admin/timeregistrering"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using DugnadApp.Models
 @using DugnadApp.Data
-@using Microsoft.AspNetCore.Components.Authorization
-@using System.Security.Claims
-@using Microsoft.AspNetCore.Http
 @inject DugnadDbContext DbContext
-@inject IHttpContextAccessor HttpContextAccessor
 
 <div class="d-flex align-items-center gap-3 mb-4">
 
@@ -29,9 +24,19 @@
 </div>
 
 <div class="mb-3">
-    <label class="form-label fw-bold">
-        Innlogget som: @Navn
-    </label>
+    @if (NyDeltakelse.BeboerId > 0)
+    {
+        <label class="form-label fw-bold label-navn">Navn</label>
+    }
+
+        <select class="form-select navn" @bind="NyDeltakelse.BeboerId">
+        <option value="0">-- Velg navn --</option>
+
+        @foreach (var beboer in Beboere)
+        {
+            <option value="@beboer.Id">@beboer.Etternavn @beboer.Fornavn</option>
+        }
+    </select>
 </div>
 
 <div class="mb-3">
@@ -100,9 +105,6 @@
 
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
-
     private List<Beboer> Beboere = new();
 
     private List<Dugnad> Dugnader = new();
@@ -110,8 +112,6 @@
     private Deltakelse NyDeltakelse = new();
 
     private string Melding = "";
-
-    private string? Navn;
 
     private bool KanLagre =>
     NyDeltakelse.BeboerId > 0 &&
@@ -122,7 +122,6 @@
    Dugnader.FirstOrDefault(d => d.Id == NyDeltakelse.DugnadId)
        ?.KreverBeskrivelse ?? false;
 
-
     protected override async Task OnInitializedAsync()
     {
         Beboere = await DbContext.Beboere
@@ -131,29 +130,10 @@
             .ToListAsync();
 
         Dugnader = await DbContext.Dugnader
-    .Where(d => d.Aktiv)
-    .OrderBy(d => d.Navn)
-    .ToListAsync();
-
-var beboerIdClaim =
-    HttpContextAccessor.HttpContext?.User
-        .FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-if (int.TryParse(beboerIdClaim, out var beboerId))
-{
-    NyDeltakelse.BeboerId = beboerId;
-}
-
-var innloggetBeboer =
-    await DbContext.Beboere
-        .FirstOrDefaultAsync(b => b.Id == beboerId);
-
-if (innloggetBeboer != null)
-{
-    Navn = $"{innloggetBeboer.Fornavn} {innloggetBeboer.Etternavn}";
-}
-       
-    }
+            .Where(d => d.Aktiv)
+            .OrderBy(d => d.Navn)
+            .ToListAsync();
+    }   
 
     private async Task Lagre()
     {
@@ -178,14 +158,8 @@ if (innloggetBeboer != null)
 
         await DbContext.SaveChangesAsync();
 
-        var registrerteTimer = NyDeltakelse.Timer;
-        var registrertDugnadId = NyDeltakelse.DugnadId;
-        var beboerId = NyDeltakelse.BeboerId;
-
-        Melding = "Dugnad registrert!";
-
         var dugnadNavn = Dugnader
-    .FirstOrDefault(d => d.Id == registrertDugnadId)?.Navn;
+    .FirstOrDefault(d => d.Id == NyDeltakelse.DugnadId)?.Navn;
 
         var beboer = Beboere
             .FirstOrDefault(b => b.Id == NyDeltakelse.BeboerId);
@@ -197,20 +171,21 @@ if (innloggetBeboer != null)
             .Sum(d => d.Timer);
 
         Melding = $"Takk {beboerNavn}! " +
-          $"{registrerteTimer} timer er registrert på '{dugnadNavn}'. " +
-          $"Du har nå registrert totalt {totaltAntallTimer} dugnadstimer.";
+            $"{NyDeltakelse.Timer} timer er registrert på '{dugnadNavn}'. " +
+            $"Du har nå registrert totalt {totaltAntallTimer.ToString()} dugnadstimer.";
 
-        NyDeltakelse = new Deltakelse
-        {
-            BeboerId = beboerId
-        };
+        NyDeltakelse = new Deltakelse();
 
         StateHasChanged();
 
-        await Task.Delay(5000);
+        await Task.Delay(10000);
 
         Melding = "";
 
         StateHasChanged();
-    }      
+
+        // Nullstill skjemaet
+        NyDeltakelse = new Deltakelse();
+    }   
+    
 }

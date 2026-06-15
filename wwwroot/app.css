@@ -102,11 +102,20 @@ h1:focus {
     padding-right: 24px;
 }
 
-    .btn-registrer:hover {
+.btn-registrer:hover {
         background-color: #1baa80;
         border-color: #1baa80;
     }
 
 .dugnad-gronn {
     color: var(--bs-success);
+}
+
+.statistik-kort {
+    width: 320px;
+    border-radius: 12px;
+}
+
+.statistik-kort .card-body {
+        padding: 1rem;
 }

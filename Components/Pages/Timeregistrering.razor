@@ -25,13 +25,48 @@
     <img src="/Images/Startside.png"
          alt="DugnadApp"
          class="img-fluid"
-         style="max-width:120px;" />
+         style="max-width:80px;" />
 </div>
 
 <div class="mb-3">
     <label class="form-label fw-bold">
         Innlogget som: @Navn
     </label>
+</div>
+
+<div class="card border-success shadow-sm mb-4 statistik-kort">
+    <div class="card-body text-center">
+
+        <div class="fs-4 mb-1">
+            🏆
+        </div>
+
+        <div class="text-muted small">
+            Totalt registrert
+        </div>
+
+        <div class="fw-bold text-success display-6">
+            @TotaltRegistrerteTimerTekst
+        </div>
+
+        <div class="text-muted small">
+            dugnadstimer
+        </div>
+
+        @if (SisteRegistrering is not null)
+        {
+            <hr />
+
+            <div class="small text-muted">
+                Siste registrering
+            </div>
+
+            <div class="fw-semibold">
+                @SisteRegistrering.RegistrertDato.ToString("dd.MM.yyyy")
+            </div>
+        }
+
+    </div>
 </div>
 
 <div class="mb-3">
@@ -54,11 +89,12 @@
 {
     <div class="mb-3">
           <label class="form-label fw-bold label-beskrivelse">
-            Beskriv hva du har gjort
+            Beskrivelse (stikkord)
         </label>
 
-        <InputText class="form-select beskrivelse"
-                   @bind-Value="NyDeltakelse.Beskrivelse" />
+        <InputText class="form-control beskrivelse"
+                   @bind-Value="NyDeltakelse.Beskrivelse"
+                   placeholder="f.eks. klippet hekk, luket bed, ryddet bod" />
     </div>
 }
 
@@ -98,6 +134,50 @@
     </div>
 }
 
+@{
+    var totalTimer = MineDeltakelser.Sum(x => x.Timer);
+}
+
+@if (MineDeltakelser.Any())
+{
+    <h4 class="mt-4">
+        Mine registrerte dugnadstimer
+        <span class="text-muted">
+            (@MineDeltakelser.Count registreringer)
+        </span>
+    </h4>
+
+    <div class="table-responsive">
+    <table class="table table-table">
+        <thead>
+            <tr>
+                <th>Dato</th>
+                <th>Dugnad</th>
+                <th>Beskrivelse</th>
+                <th>Timer</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in MineDeltakelser)
+            {
+                var dugnadNavn = Dugnader
+                    .FirstOrDefault(x => x.Id == d.DugnadId)?.Navn;
+
+                <tr>
+                    <td>@d.RegistrertDato.ToString("dd.MM.yyyy")</td>
+                    <td>@dugnadNavn</td>
+                    <td>
+                        @(string.IsNullOrWhiteSpace(d.Beskrivelse)
+                            ? "-"
+                            : d.Beskrivelse)
+                    </td>
+                    <td>@d.Timer</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    </div>
+}
 
 @code {
     [CascadingParameter]
@@ -108,6 +188,21 @@
     private List<Dugnad> Dugnader = new();
 
     private Deltakelse NyDeltakelse = new();
+
+    private decimal TotaltRegistrerteTimer =>
+    MineDeltakelser.Sum(d => d.Timer);
+
+    private Deltakelse? SisteRegistrering =>
+    MineDeltakelser
+        .OrderByDescending(d => d.RegistrertDato)
+        .FirstOrDefault();
+
+    private string TotaltRegistrerteTimerTekst =>
+        TotaltRegistrerteTimer % 1 == 0
+            ? TotaltRegistrerteTimer.ToString("0")
+            : TotaltRegistrerteTimer.ToString("0.0");
+
+    private List<Deltakelse> MineDeltakelser = new();
 
     private string Melding = "";
 
@@ -122,7 +217,6 @@
    Dugnader.FirstOrDefault(d => d.Id == NyDeltakelse.DugnadId)
        ?.KreverBeskrivelse ?? false;
 
-
     protected override async Task OnInitializedAsync()
     {
         Beboere = await DbContext.Beboere
@@ -135,14 +229,22 @@
     .OrderBy(d => d.Navn)
     .ToListAsync();
 
+       
+
 var beboerIdClaim =
     HttpContextAccessor.HttpContext?.User
         .FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
 if (int.TryParse(beboerIdClaim, out var beboerId))
 {
-    NyDeltakelse.BeboerId = beboerId;
+    NyDeltakelse.BeboerId = beboerId;  
+    MineDeltakelser = await DbContext.Deltakelser
+                      .Where(d => d.BeboerId == NyDeltakelse.BeboerId)
+                      .OrderByDescending(d => d.RegistrertDato)
+                      .ToListAsync();
 }
+
+       
 
 var innloggetBeboer =
     await DbContext.Beboere
@@ -177,6 +279,7 @@ if (innloggetBeboer != null)
         DbContext.Deltakelser.Add(NyDeltakelse);
 
         await DbContext.SaveChangesAsync();
+        MineDeltakelser.Insert(0, NyDeltakelse);
 
         var registrerteTimer = NyDeltakelse.Timer;
         var registrertDugnadId = NyDeltakelse.DugnadId;

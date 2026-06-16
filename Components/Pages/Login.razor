@@ -1,10 +1,11 @@
 ﻿@page "/login"
 @using System.ComponentModel.DataAnnotations
+@using System.Security.Cryptography
 @using DugnadApp.Data
 @using DugnadApp.Models
-@using Microsoft.EntityFrameworkCore
-@using System.Security.Cryptography
 @using DugnadApp.Services
+@using Microsoft.EntityFrameworkCore
+
 @inject EmailService EmailService
 @inject DugnadDbContext DbContext
 
@@ -12,7 +13,7 @@
 
 <h3>Innlogging for registrering av dugnadstimer</h3>
 
-<EditForm Model="@model" OnValidSubmit="SendLoginLink">
+<EditForm Model="model" OnValidSubmit="SendLoginLink">
     <DataAnnotationsValidator />
 
     <div class="mb-3">
@@ -29,8 +30,7 @@
 @if (!string.IsNullOrWhiteSpace(SuksessMelding))
 {
     <div class="alert alert-success mt-3">
-        ✅ E-post sendt! Sjekk innboksen din og klikk på lenken i e-posten.
-        Dersom e-posten ikke dukker opp innen et minutt, sjekk søppelpost.
+        ✅ @SuksessMelding
     </div>
 }
 
@@ -43,78 +43,107 @@
 
 @code
 {
-    private LoginModel model = new();
+    private readonly LoginModel model = new();
 
-    private string? Melding;
     private string? SuksessMelding;
     private string? FeilMelding;
 
     private async Task SendLoginLink()
     {
-        var beboer = await DbContext.Beboere
-            .FirstOrDefaultAsync(x => x.Epost == model.Epost);
+        ClearMessages();
 
-        if (beboer == null)
-{
-    FeilMelding = "Fant ingen beboer med denne e-postadressen.";
-    SuksessMelding = null;
+        var beboer = await FindBeboerAsync(model.Epost);
 
-    _ = Task.Run(() => SkjulMeldingEtter5Sekunder(false));
+        if (beboer is null)
+        {
+            await ShowErrorAsync(
+                "Fant ingen beboer med denne e-postadressen.");
 
-    return;
-}
-               
+            return;
+        }
+
+        var token = await CreateLoginTokenAsync(beboer.Id);
+
+        await SendLoginEmailAsync(model.Epost, token);
+
+        await ShowSuccessAsync("E-post sendt til innboksen din!");
+    }
+
+    private async Task<Beboer?> FindBeboerAsync(string epost)
+    {
+        return await DbContext.Beboere
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Epost == epost);
+    }
+
+    private async Task<string> CreateLoginTokenAsync(int beboerId)
+    {
         var token = Convert.ToBase64String(
             RandomNumberGenerator.GetBytes(32));
 
-        var loginToken = new LoginToken
+        DbContext.LoginTokens.Add(new LoginToken
         {
-            BeboerId = beboer.Id,
+            BeboerId = beboerId,
             Token = token,
             Opprettet = DateTime.UtcNow,
             Utloper = DateTime.UtcNow.AddMinutes(15),
             Brukt = false
-        };
-
-        DbContext.LoginTokens.Add(loginToken);
+        });
 
         await DbContext.SaveChangesAsync();
 
-        var url =
-     $"https://localhost:7061/magic-login?token={Uri.EscapeDataString(token)}";
-
-        await EmailService.SendAsync(
-    model.Epost,
-    "Innlogging til DugnadApp",
-    $"""
-Hei!
-
-Du har bedt om innlogging til DugnadApp.
-
-Klikk på lenken under for å logge inn:
-
-{url}
-
-Lenken er gyldig i 15 minutter.
-
-Med vennlig hilsen
-DugnadApp
-""");
-
-        SuksessMelding = "E-post sendt!";
-        FeilMelding = null;
-
-        _ = Task.Run(() => SkjulMeldingEtter5Sekunder(true));
+        return token;
     }
 
-    private async Task SkjulMeldingEtter5Sekunder(bool tømEpostfelt)
+    private async Task SendLoginEmailAsync(string epost, string token)
     {
-        await Task.Delay(8000);
+        var url =
+            $"https://localhost:7061/magic-login?token={Uri.EscapeDataString(token)}";
 
-        SuksessMelding = null;
+        await EmailService.SendAsync(
+            epost,
+            "Innlogging til DugnadApp",
+            $"""
+            Hei!
+
+            Du har bedt om innlogging til DugnadApp.
+
+            Klikk på lenken under for å logge inn:
+
+            {url}
+
+            Lenken er gyldig i 15 minutter.
+
+            Med vennlig hilsen
+            DugnadApp
+            """);
+    }
+
+    private async Task ShowSuccessAsync(string message)
+    {
+        SuksessMelding = message;
         FeilMelding = null;
 
-        if (tømEpostfelt)
+        await HideMessagesAfterDelayAsync(clearEmail: true);
+    }
+
+    private async Task ShowErrorAsync(string message)
+    {
+        FeilMelding = message;
+        SuksessMelding = null;
+
+        await HideMessagesAfterDelayAsync(clearEmail: false);
+    }
+
+    private async Task HideMessagesAfterDelayAsync(bool clearEmail)
+    {
+        StateHasChanged();
+
+        await Task.Delay(8000);
+
+        ClearMessages();
+
+        if (clearEmail)
         {
             model.Epost = string.Empty;
         }
@@ -122,10 +151,16 @@ DugnadApp
         await InvokeAsync(StateHasChanged);
     }
 
+    private void ClearMessages()
+    {
+        SuksessMelding = null;
+        FeilMelding = null;
+    }
+
     public class LoginModel
     {
-        [Required]
-        [EmailAddress]
-        public string Epost { get; set; } = "";
+        [Required(ErrorMessage = "E-post er påkrevd")]
+        [EmailAddress(ErrorMessage = "Ugyldig e-postadresse")]
+        public string Epost { get; set; } = string.Empty;
     }
 }

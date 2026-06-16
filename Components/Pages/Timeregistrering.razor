@@ -4,7 +4,6 @@
 @using Microsoft.EntityFrameworkCore
 @using DugnadApp.Models
 @using DugnadApp.Data
-@using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Http
 @inject DugnadDbContext DbContext
@@ -92,9 +91,10 @@
             Beskrivelse (stikkord)
         </label>
 
-        <InputText class="form-control beskrivelse"
-                   @bind-Value="NyDeltakelse.Beskrivelse"
-                   placeholder="f.eks. klippet hekk, luket bed, ryddet bod" />
+        <select class="form-select dugnad"
+                value="@NyDeltakelse.DugnadId"
+                @onchange="DugnadEndret"
+                placeholder="f.eks. klippet hekk, luket bed, ryddet bod" />
     </div>
 }
 
@@ -134,10 +134,6 @@
     </div>
 }
 
-@{
-    var totalTimer = MineDeltakelser.Sum(x => x.Timer);
-}
-
 @if (MineDeltakelser.Any())
 {
     <h4 class="mt-4">
@@ -153,7 +149,7 @@
             <tr>
                 <th>Dato</th>
                 <th>Dugnad</th>
-                <th>Beskrivelse</th>
+                    <th class="d-none d-md-table-cell">Beskrivelse</th>
                 <th>Timer</th>
             </tr>
         </thead>
@@ -166,7 +162,7 @@
                 <tr>
                     <td>@d.RegistrertDato.ToString("dd.MM.yyyy")</td>
                     <td>@dugnadNavn</td>
-                    <td>
+                        <td class="d-none d-md-table-cell">
                         @(string.IsNullOrWhiteSpace(d.Beskrivelse)
                             ? "-"
                             : d.Beskrivelse)
@@ -180,11 +176,6 @@
 }
 
 @code {
-    [CascadingParameter]
-    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
-
-    private List<Beboer> Beboere = new();
-
     private List<Dugnad> Dugnader = new();
 
     private Deltakelse NyDeltakelse = new();
@@ -197,6 +188,16 @@
         .OrderByDescending(d => d.RegistrertDato)
         .FirstOrDefault();
 
+    private void DugnadEndret(ChangeEventArgs e)
+    {
+        NyDeltakelse.DugnadId = int.Parse(e.Value?.ToString() ?? "0");
+
+        if (!ValgtDugnadKreverBeskrivelse)
+        {
+            NyDeltakelse.Beskrivelse = "";
+        }
+    }
+
     private string TotaltRegistrerteTimerTekst =>
         TotaltRegistrerteTimer % 1 == 0
             ? TotaltRegistrerteTimer.ToString("0")
@@ -205,8 +206,8 @@
     private List<Deltakelse> MineDeltakelser = new();
 
     private string Melding = "";
-
     private string? Navn;
+    private string? Fornavn;
 
     private bool KanLagre =>
     NyDeltakelse.BeboerId > 0 &&
@@ -219,12 +220,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Beboere = await DbContext.Beboere
-            .OrderBy(b => b.Etternavn)
-            .ThenBy(b => b.Fornavn)
-            .ToListAsync();
-
-        Dugnader = await DbContext.Dugnader
+     Dugnader = await DbContext.Dugnader
     .Where(d => d.Aktiv)
     .OrderBy(d => d.Navn)
     .ToListAsync();
@@ -242,9 +238,7 @@ if (int.TryParse(beboerIdClaim, out var beboerId))
                       .Where(d => d.BeboerId == NyDeltakelse.BeboerId)
                       .OrderByDescending(d => d.RegistrertDato)
                       .ToListAsync();
-}
-
-       
+}       
 
 var innloggetBeboer =
     await DbContext.Beboere
@@ -253,6 +247,7 @@ var innloggetBeboer =
 if (innloggetBeboer != null)
 {
     Navn = $"{innloggetBeboer.Fornavn} {innloggetBeboer.Etternavn}";
+            Fornavn = innloggetBeboer.Fornavn;
 }
        
     }
@@ -288,20 +283,10 @@ if (innloggetBeboer != null)
         Melding = "Dugnad registrert!";
 
         var dugnadNavn = Dugnader
-    .FirstOrDefault(d => d.Id == registrertDugnadId)?.Navn;
-
-        var beboer = Beboere
-            .FirstOrDefault(b => b.Id == NyDeltakelse.BeboerId);
-
-        var beboerNavn = $"{beboer?.Fornavn}";
-
-        var totaltAntallTimer = DbContext.Deltakelser
-            .Where(d => d.BeboerId == NyDeltakelse.BeboerId)
-            .Sum(d => d.Timer);
-
-        Melding = $"Takk {beboerNavn}! " +
-          $"{registrerteTimer} timer er registrert på '{dugnadNavn}'. " +
-          $"Du har nå registrert totalt {totaltAntallTimer} dugnadstimer.";
+    .FirstOrDefault(d => d.Id == registrertDugnadId)?.Navn;   
+        
+        Melding = $"✅ Takk {Fornavn}! " +
+          $"{registrerteTimer} timer registrert på '{dugnadNavn}'.";
 
         NyDeltakelse = new Deltakelse
         {

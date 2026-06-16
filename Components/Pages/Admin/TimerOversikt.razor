@@ -1,0 +1,139 @@
+﻿@page "/admin/timeroversikt"
+@using Microsoft.EntityFrameworkCore
+@using DugnadApp.Models
+@using DugnadApp.Data
+@inject DugnadDbContext DbContext
+
+<h2>Timeroversikt</h2>
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Dato</th>
+                <th>Beboer</th>
+                <th>Dugnad</th>
+                <th>Timer</th>
+                <th>Beskrivelse</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in Deltakelser)
+            {
+                <tr>
+                    <td>@d.RegistrertDato.ToString("dd.MM.yyyy")</td>
+                    <td>@d.Beboer?.Fornavn @d.Beboer?.Etternavn</td>
+                    <td>@d.Dugnad?.Navn</td>              
+                   <td>
+     @if (RedigerId == d.Id)
+    {
+                        <select class="form-select" @bind="TimerUnderRedigering">
+                            <option value="0,5">0,5</option>
+                            <option value="1">1,0</option>
+                            <option value="1,5">1,5</option>
+                            <option value="2">2,0</option>
+                            <option value="2,5">2,5</option>
+                            <option value="3">3,0</option>
+                            <option value="3,5">3,5</option>
+                            <option value="4">4,0</option>
+                            <option value="4,5">4,5</option>
+                            <option value="5">5,0</option>
+                            <option value="5,5">5,5</option>
+                            <option value="6">6,0</option>
+                        </select>
+    }
+    else
+    {
+        @d.Timer
+    }
+                    </td>                
+                <td>@(string.IsNullOrWhiteSpace(d.Beskrivelse) ? "-" : d.Beskrivelse)</td>
+                
+                    <td>
+    @if (RedigerId == d.Id)
+    {
+                    <button class="btn btn-sm btn-success me-1"
+                @onclick="LagreEndringer">
+            💾
+                    </button>
+
+                    <button class="btn btn-sm btn-secondary"
+                @onclick="Avbryt">
+            ❌
+                 </button>
+    }
+    else
+    {
+                    <button class="btn btn-sm btn-outline-primary me-1"
+                @onclick="() => Rediger(d)">
+            ✏️
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-danger"
+                @onclick="() => Slett(d.Id)">
+            🗑️
+                    </button>
+    }
+                </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+@code {
+
+    private List<Deltakelse> Deltakelser = new();
+    private int? RedigerId;
+    private decimal TimerUnderRedigering;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Deltakelser = await DbContext.Deltakelser
+            .Include(d => d.Beboer)
+            .Include(d => d.Dugnad)
+            .OrderByDescending(d => d.RegistrertDato)
+            .ToListAsync();
+    }
+
+   private async Task Slett(int id)
+    {
+        var deltakelse = await DbContext.Deltakelser.FindAsync(id);
+
+        if (deltakelse is null)
+            return;
+
+        DbContext.Deltakelser.Remove(deltakelse);
+
+        await DbContext.SaveChangesAsync();
+
+        Deltakelser = await DbContext.Deltakelser
+            .Include(d => d.Beboer)
+            .Include(d => d.Dugnad)
+            .ToListAsync();
+    }
+
+    private void Rediger(Deltakelse d)
+    {
+        RedigerId = d.Id;
+        TimerUnderRedigering = d.Timer;
+    }
+
+    private async Task LagreEndringer()
+    {
+        var deltakelse = Deltakelser
+            .First(d => d.Id == RedigerId);
+
+        deltakelse.Timer = TimerUnderRedigering;
+
+        await DbContext.SaveChangesAsync();
+
+        RedigerId = null;
+    }
+
+    private void Avbryt()
+    {
+        RedigerId = null;
+    }
+
+    
+
+}

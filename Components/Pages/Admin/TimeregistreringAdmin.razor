@@ -1,4 +1,4 @@
-﻿@page "/admin/timeregistrering"
+﻿@page "/admin/TimeregistreringAdmin"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using DugnadApp.Models
@@ -29,7 +29,7 @@
         <label class="form-label fw-bold label-navn">Navn</label>
     }
 
-        <select class="form-select navn" @bind="NyDeltakelse.BeboerId">
+    <select class="form-select navn" @bind="NyDeltakelse.BeboerId">
         <option value="0">-- Velg navn --</option>
 
         @foreach (var beboer in Beboere)
@@ -45,8 +45,9 @@
         <label class="form-label fw-bold label-dugnad">Dugnad</label>
     }
 
-        <select class="form-select dugnad" @bind="NyDeltakelse.DugnadId">
-        <option value="0">-- Velg dugnad --</option>
+    <select class="form-select dugnad"
+            value="@NyDeltakelse.DugnadId"
+            @onchange="DugnadEndret">
 
         @foreach (var dugnad in Dugnader)
         {
@@ -58,7 +59,7 @@
 @if (ValgtDugnadKreverBeskrivelse)
 {
     <div class="mb-3">
-          <label class="form-label fw-bold label-beskrivelse">
+        <label class="form-label fw-bold label-beskrivelse">
             Beskriv hva du har gjort
         </label>
 
@@ -73,7 +74,7 @@
         <label class="form-label fw-bold label-timer">Timer</label>
     }
 
-        <select class="form-select timer" @bind="NyDeltakelse.Timer">
+    <select class="form-select timer" @bind="NyDeltakelse.Timer">
         <option value="0">-- Velg timer --</option>
         <option value="0,5">0,5 time</option>
         <option value="1">1,0 time</option>
@@ -133,7 +134,17 @@
             .Where(d => d.Aktiv)
             .OrderBy(d => d.Navn)
             .ToListAsync();
-    }   
+    }
+
+    private void DugnadEndret(ChangeEventArgs e)
+    {
+        NyDeltakelse.DugnadId = int.Parse(e.Value?.ToString() ?? "0");
+
+        if (!ValgtDugnadKreverBeskrivelse)
+        {
+            NyDeltakelse.Beskrivelse = "";
+        }
+    }
 
     private async Task Lagre()
     {
@@ -164,28 +175,21 @@
         var beboer = Beboere
             .FirstOrDefault(b => b.Id == NyDeltakelse.BeboerId);
 
-        var beboerNavn = $"{beboer?.Fornavn}";
+        var beboerNavn = $"{beboer?.Fornavn} {beboer?.Etternavn}";
 
-        var totaltAntallTimer = DbContext.Deltakelser
-            .Where(d => d.BeboerId == NyDeltakelse.BeboerId)
-            .Sum(d => d.Timer);
-
-        Melding = $"Takk {beboerNavn}! " +
-            $"{NyDeltakelse.Timer} timer er registrert på '{dugnadNavn}'. " +
-            $"Du har nå registrert totalt {totaltAntallTimer.ToString()} dugnadstimer.";
-
-        NyDeltakelse = new Deltakelse();
-
-        StateHasChanged();
-
-        await Task.Delay(10000);
-
-        Melding = "";
-
-        StateHasChanged();
+        Melding = $"{NyDeltakelse.Timer} timer er registrert på '{dugnadNavn}' for {beboerNavn}.";
 
         // Nullstill skjemaet
         NyDeltakelse = new Deltakelse();
-    }   
-    
+
+        StateHasChanged();
+
+        await Task.Delay(5000);
+
+        Melding = "";
+
+        StateHasChanged();     
+ 
+    }
+
 }

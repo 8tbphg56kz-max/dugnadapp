@@ -52,4 +52,14 @@ public class EmailService
 
         await smtp.DisconnectAsync(true);
     }
+
+    public async Task SendLoginCodeAsync(
+    string epost,
+    string kode)
+    {
+        await SendAsync(
+            epost,
+            "Innloggingskode",
+            $"Din innloggingskode er: {kode}");
+    }
 }

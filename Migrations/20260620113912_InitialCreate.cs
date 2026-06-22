@@ -7,23 +7,27 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DugnadApp.Migrations
 {
     /// <inheritdoc />
-    public partial class OpprettNyeTabeller : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Leilighet",
-                table: "Leilighet");
-
-            migrationBuilder.RenameTable(
-                name: "Leilighet",
-                newName: "Leiligheter");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Leiligheter",
-                table: "Leiligheter",
-                column: "Id");
+            migrationBuilder.CreateTable(
+                name: "Beboere",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Seksjonsnr = table.Column<int>(type: "integer", nullable: false),
+                    Fornavn = table.Column<string>(type: "text", nullable: false),
+                    Etternavn = table.Column<string>(type: "text", nullable: false),
+                    Epost = table.Column<string>(type: "text", nullable: false),
+                    ErAdmin = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Beboere", x => x.Id);
+                });
 
             migrationBuilder.CreateTable(
                 name: "Dugnader",
@@ -31,11 +35,27 @@ namespace DugnadApp.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Navn = table.Column<string>(type: "text", nullable: false)
+                    Navn = table.Column<string>(type: "text", nullable: false),
+                    Aktiv = table.Column<bool>(type: "boolean", nullable: false),
+                    KreverBeskrivelse = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Dugnader", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Leiligheter",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Seksjonsnr = table.Column<int>(type: "integer", nullable: false),
+                    Leilighetsnr = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Leiligheter", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -47,6 +67,7 @@ namespace DugnadApp.Migrations
                     BeboerId = table.Column<int>(type: "integer", nullable: false),
                     DugnadId = table.Column<int>(type: "integer", nullable: false),
                     Timer = table.Column<decimal>(type: "numeric", nullable: false),
+                    Beskrivelse = table.Column<string>(type: "text", nullable: true),
                     RegistrertDato = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -84,20 +105,13 @@ namespace DugnadApp.Migrations
                 name: "Deltakelser");
 
             migrationBuilder.DropTable(
+                name: "Leiligheter");
+
+            migrationBuilder.DropTable(
+                name: "Beboere");
+
+            migrationBuilder.DropTable(
                 name: "Dugnader");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Leiligheter",
-                table: "Leiligheter");
-
-            migrationBuilder.RenameTable(
-                name: "Leiligheter",
-                newName: "Leilighet");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Leilighet",
-                table: "Leilighet",
-                column: "Id");
         }
     }
 }

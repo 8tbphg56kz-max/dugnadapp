@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DugnadApp.Migrations
 {
     [DbContext(typeof(DugnadDbContext))]
-    [Migration("20260608201605_AddBeskrivelseToDugnad")]
-    partial class AddBeskrivelseToDugnad
+    [Migration("20260620113912_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,6 +32,13 @@ namespace DugnadApp.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Epost")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("ErAdmin")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Etternavn")
                         .IsRequired()

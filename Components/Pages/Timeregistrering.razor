@@ -1,16 +1,19 @@
 ﻿@page "/timeregistrering"
-@attribute [Authorize]
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.EntityFrameworkCore
 @using DugnadApp.Models
 @using DugnadApp.Data
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Http
+
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthProvider
+
 @inject DugnadDbContext DbContext
 @inject IHttpContextAccessor HttpContextAccessor
 
-<div class="d-flex align-items-center gap-3 mb-4">
-
+<div class="d-flex align-items-center gap-3 mb-4">    
+   
     <div>
         <h2 class="fw-bold mb-1">
             Registrering av <span class="dugnad-gronn">dugnadstimer</span>
@@ -87,14 +90,13 @@
 @if (ValgtDugnadKreverBeskrivelse)
 {
     <div class="mb-3">
-          <label class="form-label fw-bold label-beskrivelse">
+        <label class="form-label fw-bold label-beskrivelse">
             Beskrivelse (stikkord)
         </label>
 
-        <select class="form-select dugnad"
-                value="@NyDeltakelse.DugnadId"
-                @onchange="DugnadEndret"
-                placeholder="f.eks. klippet hekk, luket bed, ryddet bod" />
+        <InputText class="form-control"
+                   @bind-Value="NyDeltakelse.Beskrivelse"
+                   placeholder="f.eks. klippet hekk, luket bed, ryddet bod" />
     </div>
 }
 
@@ -225,12 +227,14 @@
     .OrderBy(d => d.Navn)
     .ToListAsync();
 
-       
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
 
-var beboerIdClaim =
-    HttpContextAccessor.HttpContext?.User
+        var navn = user.Identity?.Name;      
+
+var beboerIdClaim =user
         .FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
+   
 if (int.TryParse(beboerIdClaim, out var beboerId))
 {
     NyDeltakelse.BeboerId = beboerId;  
@@ -249,7 +253,7 @@ if (innloggetBeboer != null)
     Navn = $"{innloggetBeboer.Fornavn} {innloggetBeboer.Etternavn}";
             Fornavn = innloggetBeboer.Fornavn;
 }
-       
+      
     }
 
     private async Task Lagre()

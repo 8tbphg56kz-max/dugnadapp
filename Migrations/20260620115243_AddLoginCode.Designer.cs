@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DugnadApp.Migrations
 {
     [DbContext(typeof(DugnadDbContext))]
-    [Migration("20260608165052_OpprettNyeTabeller")]
-    partial class OpprettNyeTabeller
+    [Migration("20260620115243_AddLoginCode")]
+    partial class AddLoginCode
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,6 +32,13 @@ namespace DugnadApp.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Epost")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("ErAdmin")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Etternavn")
                         .IsRequired()
@@ -60,6 +67,9 @@ namespace DugnadApp.Migrations
                     b.Property<int>("BeboerId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Beskrivelse")
+                        .HasColumnType("text");
+
                     b.Property<int>("DugnadId")
                         .HasColumnType("integer");
 
@@ -85,6 +95,12 @@ namespace DugnadApp.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Aktiv")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("KreverBeskrivelse")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Navn")
                         .IsRequired()
@@ -113,6 +129,36 @@ namespace DugnadApp.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Leiligheter");
+                });
+
+            modelBuilder.Entity("DugnadApp.Models.LoginCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Brukt")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Epost")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Kode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Opprettet")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("Utloper")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LoginCoder");
                 });
 
             modelBuilder.Entity("DugnadApp.Models.Deltakelse", b =>

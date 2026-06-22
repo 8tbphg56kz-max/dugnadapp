@@ -1,166 +1,107 @@
 ﻿@page "/login"
-@using System.ComponentModel.DataAnnotations
-@using System.Security.Cryptography
 @using DugnadApp.Data
 @using DugnadApp.Models
-@using DugnadApp.Services
 @using Microsoft.EntityFrameworkCore
-
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using DugnadApp.Services
 @inject EmailService EmailService
-@inject DugnadDbContext DbContext
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager Navigation
+@inject DugnadDbContext Db
 
-<PageTitle>Innlogging</PageTitle>
+<h3>Logg inn</h3>
 
-<h3>Innlogging for registrering av dugnadstimer</h3>
+<input @bind="Epost" placeholder="E-post" />
 
-<EditForm Model="model" OnValidSubmit="SendLoginLink">
-    <DataAnnotationsValidator />
+<button @onclick="SendKode">
+    Send kode
+</button>
 
-    <div class="mb-3">
-        <InputText class="form-control"
-                   @bind-Value="model.Epost"
-                   placeholder="Skriv inn e-postadressen din" />
-    </div>
-
-    <button class="btn btn-success" type="submit">
-        Logg inn
-    </button>
-</EditForm>
-
-@if (!string.IsNullOrWhiteSpace(SuksessMelding))
+@if (!string.IsNullOrEmpty(Melding))
 {
-    <div class="alert alert-success mt-3">
-        ✅ @SuksessMelding
+    <p>@Melding</p>
+}
+
+@if (KodeSendt)
+{
+    <div class="mt-3">
+        <input @bind="Kode" placeholder="6-sifret kode" />
+
+        <button @onclick="LoggInn">
+            Logg inn
+        </button>
     </div>
 }
 
-@if (!string.IsNullOrWhiteSpace(FeilMelding))
-{
-    <div class="alert alert-danger mt-3">
-        ❌ @FeilMelding
-    </div>
-}
+@code {
 
-@code
-{
-    private readonly LoginModel model = new();
+    private string Epost = "";
+    private string Melding = "";
+    private string Kode = "";
+    private bool KodeSendt = false;
 
-    private string? SuksessMelding;
-    private string? FeilMelding;
-
-    private async Task SendLoginLink()
+    private async Task SendKode()
     {
-        ClearMessages();
+        var beboer = await Db.Beboere
+            .FirstOrDefaultAsync(x => x.Epost == Epost);
 
-        var beboer = await FindBeboerAsync(model.Epost);
-
-        if (beboer is null)
+        if (beboer == null)
         {
-            await ShowErrorAsync(
-                "Fant ingen beboer med denne e-postadressen.");
-
+            Melding = "Fant ingen beboer med denne e-postadressen.";
             return;
         }
 
-        var token = await CreateLoginTokenAsync(beboer.Id);
+        var kode = Random.Shared
+            .Next(100000, 999999)
+            .ToString();
 
-        await SendLoginEmailAsync(model.Epost, token);
-
-        await ShowSuccessAsync("E-post sendt til innboksen din!");
-    }
-
-    private async Task<Beboer?> FindBeboerAsync(string epost)
-    {
-        return await DbContext.Beboere
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Epost == epost);
-    }
-
-    private async Task<string> CreateLoginTokenAsync(int beboerId)
-    {
-        var token = Convert.ToBase64String(
-            RandomNumberGenerator.GetBytes(32));
-
-        DbContext.LoginTokens.Add(new LoginToken
+        var loginCode = new LoginCode
         {
-            BeboerId = beboerId,
-            Token = token,
+            Epost = beboer.Epost,
+            Kode = kode,
             Opprettet = DateTime.UtcNow,
             Utloper = DateTime.UtcNow.AddMinutes(15),
             Brukt = false
-        });
+        };
 
-        await DbContext.SaveChangesAsync();
+        Db.LoginCoder.Add(loginCode);
+        await Db.SaveChangesAsync();
 
-        return token;
+        KodeSendt = true;
+
+        //var navn = $"{beboer.Fornavn} {beboer.Etternavn}".Trim();
+
+        Melding = "Vi har sendt en kode til e-postadressen din.";
+
+        await EmailService.SendLoginCodeAsync(
+    beboer.Epost,
+    kode);
     }
 
-    private async Task SendLoginEmailAsync(string epost, string token)
+    private async Task LoggInn()
     {
-        var url =
-            $"https://localhost:7061/magic-login?token={Uri.EscapeDataString(token)}";
+        var loginCode = await Db.LoginCoder
+            .Where(x => x.Epost == Epost)
+            .Where(x => x.Kode == Kode)
+            .Where(x => !x.Brukt)
+            .Where(x => x.Utloper > DateTime.UtcNow)
+            .OrderByDescending(x => x.Opprettet)
+            .FirstOrDefaultAsync();
 
-        await EmailService.SendAsync(
-            epost,
-            "Innlogging til DugnadApp",
-            $"""
-            Hei!
-
-            Du har bedt om innlogging til DugnadApp.
-
-            Klikk på lenken under for å logge inn:
-
-            {url}
-
-            Lenken er gyldig i 15 minutter.
-
-            Med vennlig hilsen
-            DugnadApp
-            """);
-    }
-
-    private async Task ShowSuccessAsync(string message)
-    {
-        SuksessMelding = message;
-        FeilMelding = null;
-
-        await HideMessagesAfterDelayAsync(clearEmail: true);
-    }
-
-    private async Task ShowErrorAsync(string message)
-    {
-        FeilMelding = message;
-        SuksessMelding = null;
-
-        await HideMessagesAfterDelayAsync(clearEmail: false);
-    }
-
-    private async Task HideMessagesAfterDelayAsync(bool clearEmail)
-    {
-        StateHasChanged();
-
-        await Task.Delay(8000);
-
-        ClearMessages();
-
-        if (clearEmail)
+        if (loginCode == null)
         {
-            model.Epost = string.Empty;
+            Melding = "Ugyldig eller utløpt kode.";
+            return;
         }
 
-        await InvokeAsync(StateHasChanged);
-    }
+        loginCode.Brukt = true;
 
-    private void ClearMessages()
-    {
-        SuksessMelding = null;
-        FeilMelding = null;
-    }
+        await Db.SaveChangesAsync();
 
-    public class LoginModel
-    {
-        [Required(ErrorMessage = "E-post er påkrevd")]
-        [EmailAddress(ErrorMessage = "Ugyldig e-postadresse")]
-        public string Epost { get; set; } = string.Empty;
+        Navigation.NavigateTo(
+            $"/auth/login?epost={Uri.EscapeDataString(Epost)}",
+            true);
     }
 }

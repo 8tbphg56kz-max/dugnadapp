@@ -1,10 +1,13 @@
-using DugnadApp.Data;
 using DugnadApp.Components;
-using Microsoft.EntityFrameworkCore;
-using System.Globalization;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using DugnadApp.Data;
 using DugnadApp.Models;
 using DugnadApp.Services;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Security.Claims;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
@@ -31,6 +34,9 @@ builder.Services
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCascadingAuthenticationState();
+
+
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection("EmailSettings"));
 
@@ -54,8 +60,6 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
-app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -64,5 +68,45 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+app.MapGet("/auth/login", async (
+    string epost,
+    DugnadDbContext db,
+    HttpContext http) =>
+{
+    var beboer = await db.Beboere
+        .FirstOrDefaultAsync(x => x.Epost == epost);
+
+    if (beboer == null)
+    {
+        return Results.Redirect("/login");
+    }
+
+    var claims = new List<Claim>
+    {
+        new(ClaimTypes.NameIdentifier, beboer.Id.ToString()),
+        new(ClaimTypes.Name,
+            $"{beboer.Fornavn} {beboer.Etternavn}"),
+        new(ClaimTypes.Email, beboer.Epost)
+    };
+
+    if (beboer.ErAdmin)
+    {
+        claims.Add(
+            new Claim(ClaimTypes.Role, "Admin"));
+    }
+
+    var identity = new ClaimsIdentity(
+        claims,
+        CookieAuthenticationDefaults.AuthenticationScheme);
+
+    var principal = new ClaimsPrincipal(identity);
+
+    await http.SignInAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme,
+        principal);
+
+    return Results.Redirect("/");
+});
 
 app.Run();

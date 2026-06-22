@@ -1,10 +1,27 @@
 ﻿@page "/"
 
 @inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Authorization
+
+<AuthorizeView>
+    <Authorized>
+        @{
+            Navigation.NavigateTo("/timeregistrering");
+        }
+    </Authorized>
+
+    <NotAuthorized>
+        @{
+            Navigation.NavigateTo("/login");
+        }
+    </NotAuthorized>
+</AuthorizeView>
+
 
 @code {
     protected override void OnInitialized()
     {
-        Navigation.NavigateTo("/timeregistrering");
+
     }
+
 }

@@ -34,6 +34,9 @@ namespace DugnadApp.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("ErAdmin")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Etternavn")
                         .IsRequired()
                         .HasColumnType("text");
@@ -125,7 +128,7 @@ namespace DugnadApp.Migrations
                     b.ToTable("Leiligheter");
                 });
 
-            modelBuilder.Entity("DugnadApp.Models.LoginToken", b =>
+            modelBuilder.Entity("DugnadApp.Models.LoginCode", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -133,27 +136,26 @@ namespace DugnadApp.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("BeboerId")
-                        .HasColumnType("integer");
-
                     b.Property<bool>("Brukt")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime>("Opprettet")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Token")
+                    b.Property<string>("Epost")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("Kode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("Opprettet")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("Utloper")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BeboerId");
-
-                    b.ToTable("LoginTokens");
+                    b.ToTable("LoginCoder");
                 });
 
             modelBuilder.Entity("DugnadApp.Models.Deltakelse", b =>
@@ -173,17 +175,6 @@ namespace DugnadApp.Migrations
                     b.Navigation("Beboer");
 
                     b.Navigation("Dugnad");
-                });
-
-            modelBuilder.Entity("DugnadApp.Models.LoginToken", b =>
-                {
-                    b.HasOne("DugnadApp.Models.Beboer", "Beboer")
-                        .WithMany()
-                        .HasForeignKey("BeboerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Beboer");
                 });
 #pragma warning restore 612, 618
         }

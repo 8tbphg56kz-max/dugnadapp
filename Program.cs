@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,10 +30,14 @@ builder.Services
     .AddCookie(options =>
     {
         options.LoginPath = "/login";
+
         options.ExpireTimeSpan = TimeSpan.FromDays(30);
         options.SlidingExpiration = true;
-    });
 
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.HttpOnly = true;
+    });
 builder.Services.AddAuthorization();
 
 builder.Services.AddCascadingAuthenticationState();
@@ -44,11 +50,18 @@ builder.Services.AddScoped<EmailService>();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<DugnadDbContext>();
-    db.Database.Migrate();
-}
+app.UseForwardedHeaders(
+    new ForwardedHeadersOptions
+    {
+        ForwardedHeaders =
+            ForwardedHeaders.XForwardedFor |
+            ForwardedHeaders.XForwardedProto
+    });
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -106,7 +119,9 @@ app.MapGet("/auth/login", async (
         CookieAuthenticationDefaults.AuthenticationScheme,
         principal);
 
-    return Results.Redirect("/");
+    return Results.Redirect(
+    "/timeregistrering",
+    permanent: false);
 });
 
 app.Run();

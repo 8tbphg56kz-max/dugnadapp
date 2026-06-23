@@ -45,7 +45,7 @@
     private async Task SendKode()
     {
         var beboer = await Db.Beboere
-            .FirstOrDefaultAsync(x => x.Epost == Epost);
+            .FirstOrDefaultAsync(x => x.Epost.ToLower() == Epost.ToLower());
 
         if (beboer == null)
         {
@@ -71,9 +71,7 @@
 
         KodeSendt = true;
 
-        //var navn = $"{beboer.Fornavn} {beboer.Etternavn}".Trim();
-
-        Melding = "Vi har sendt en kode til e-postadressen din.";
+        Melding = "Vi har sendt en innlogingskode til e-postadressen din.";
 
         await EmailService.SendLoginCodeAsync(
     beboer.Epost,

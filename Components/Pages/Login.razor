@@ -13,34 +13,31 @@
 
 <h3>Logg inn</h3>
 
-<input @bind="Epost" placeholder="E-post" />
+@if (!KodeSendt)
+{
+    <InputText @bind-Value="Epost" placeholder="E-post" />
+    <button @onclick="SendKode">Send kode</button>
+}
+else
+{
+    <p>
+        Vi har sendt en kode til @MaskerEpost(Epost).
+        Hent koden fra innboksen din og skriv den inn nedenfor.
+    </p>
 
-<button @onclick="SendKode">
-    Send kode
-</button>
+    <InputText @bind-Value="Kode" placeholder="6-sifret kode" />
+    <button @onclick="LoggInn">Logg inn</button>}
 
 @if (!string.IsNullOrEmpty(Melding))
 {
     <p>@Melding</p>
 }
 
-@if (KodeSendt)
-{
-    <div class="mt-3">
-        <input @bind="Kode" placeholder="6-sifret kode" />
-
-        <button @onclick="LoggInn">
-            Logg inn
-        </button>
-    </div>
-}
-
 @code {
-
     private string Epost = "";
     private string Melding = "";
     private string Kode = "";
-    private bool KodeSendt = false;
+    private bool KodeSendt = false;   
 
     private async Task SendKode()
     {
@@ -70,12 +67,17 @@
         await Db.SaveChangesAsync();
 
         KodeSendt = true;
-
-        Melding = "Vi har sendt en innlogingskode til e-postadressen din.";
+        Melding = "";
 
         await EmailService.SendLoginCodeAsync(
     beboer.Epost,
     kode);
+    }
+
+    private void StartPåNytt()
+    {
+        KodeSendt = false;
+        Kode = "";
     }
 
     private async Task LoggInn()
@@ -94,12 +96,31 @@
             return;
         }
 
-        loginCode.Brukt = true;
+        loginCode.Brukt = true;        
 
         await Db.SaveChangesAsync();
 
         Navigation.NavigateTo(
             $"/auth/login?epost={Uri.EscapeDataString(Epost)}",
             true);
+    }
+
+    private string MaskerEpost(string epost)
+    {
+        if (string.IsNullOrWhiteSpace(epost))
+            return "";
+
+        var deler = epost.Split('@');
+
+        if (deler.Length != 2)
+            return epost;
+
+        var navn = deler[0];
+        var domene = deler[1];
+
+        if (navn.Length <= 2)
+            return $"{navn[0]}***@{domene}";
+
+        return $"{navn.Substring(0, 2)}***@{domene}";
     }
 }

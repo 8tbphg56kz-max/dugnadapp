@@ -1,0 +1,9 @@
+﻿.login-layout {
+    min-height: 100vh;
+    background-color: #f8f9fa;
+
+     background: linear-gradient(
+        180deg,
+        #f8f9fa 0%,
+        #eef3f8 100%);
+}

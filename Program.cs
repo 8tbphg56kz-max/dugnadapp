@@ -88,7 +88,7 @@ app.MapGet("/auth/login", async (
     HttpContext http) =>
 {
     var beboer = await db.Beboere
-        .FirstOrDefaultAsync(x => x.Epost == epost);
+        .FirstOrDefaultAsync(x => x.Epost.ToLower() == epost.ToLower());
 
     if (beboer == null)
     {
@@ -122,6 +122,14 @@ app.MapGet("/auth/login", async (
     return Results.Redirect(
     "/timeregistrering",
     permanent: false);
+});
+
+app.MapGet("/auth/logout", async (HttpContext http) =>
+{
+    await http.SignOutAsync(
+        CookieAuthenticationDefaults.AuthenticationScheme);
+
+    return Results.Redirect("/login");
 });
 
 app.Run();

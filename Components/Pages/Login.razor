@@ -74,28 +74,31 @@
         }
     </div>
 
-    <div class="card border-0 shadow-sm mt-4 p-4"
-         style="max-width:450px; width:100%;">
+    @if (!KodeSendt)
+    {
+        <div class="card border-0 shadow-sm mt-4 p-4"
+             style="max-width:450px; width:100%;">
 
-        <h5 class="mb-3">
-            📢 Informasjon
-        </h5>
+            <h5 class="mb-3">
+                📢 Informasjon
+            </h5>
 
-        <p>
-            Logg inn og registrer timer hver gang du har
-            utført dugnadsarbeid.
-        </p>
+            <p>
+                Logg inn og registrer timer hver gang du har
+                utført dugnadsarbeid.
+            </p>
 
-        <p>
-            Styret bruker opplysningene kun til
-            administrasjon av dugnadstimene.
-        </p>
+            <p>
+                Styret bruker opplysningene kun til
+                administrasjon av dugnadstimene.
+            </p>
 
-        <p class="mb-0">
-            Data slettes etter endt dugnadsår.
-        </p>
+            <p class="mb-0">
+                Data slettes etter endt dugnadsår.
+            </p>
 
-    </div>
+        </div>
+    }
 
 </div>
 @code {

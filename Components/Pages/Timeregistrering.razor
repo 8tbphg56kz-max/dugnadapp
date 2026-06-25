@@ -10,12 +10,13 @@
 @inject AuthenticationStateProvider AuthProvider
 @inject DugnadDbContext DbContext
 @inject IHttpContextAccessor HttpContextAccessor
+@layout MainLayout
 
-<div class="d-flex justify-content-end mb-3">
-    <a href="/auth/logout" class="btn btn-outline-secondary">
-        <i class="bi bi-box-arrow-right"></i> Logg ut
-    </a>
-</div>
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <h3 style="color:green">ADMIN</h3>
+    </Authorized>
+</AuthorizeView>
 
 <div class="d-flex align-items-center gap-3 mb-4">    
    
@@ -23,6 +24,11 @@
         <h2 class="fw-bold mb-1">
             Registrering av <span class="dugnad-gronn">dugnadstimer</span>
         </h2>
+
+        <p>
+            Er Admin:
+            @HttpContextAccessor.HttpContext?.User.IsInRole("Admin")
+        </p>
 
         <p class="text-muted mb-0">
             Fyll ut skjemaet under for å registrere din dugnadsinnsats
@@ -59,21 +65,7 @@
         <div class="text-muted small">
             dugnadstimer
         </div>
-
-        @if (SisteRegistrering is not null)
-        {
-            <hr />
-
-            <div class="small text-muted">
-                Siste registrering
-            </div>
-
-            <div class="fw-semibold">
-                @SisteRegistrering.RegistrertDato.ToString("dd.MM.yyyy")
-            </div>
-        }
-
-    </div>
+      </div>
 </div>
 
 <div class="mb-3">
@@ -189,12 +181,7 @@
 
     private decimal TotaltRegistrerteTimer =>
     MineDeltakelser.Sum(d => d.Timer);
-
-    private Deltakelse? SisteRegistrering =>
-    MineDeltakelser
-        .OrderByDescending(d => d.RegistrertDato)
-        .FirstOrDefault();
-
+    
     private void DugnadEndret(ChangeEventArgs e)
     {
         NyDeltakelse.DugnadId = int.Parse(e.Value?.ToString() ?? "0");

@@ -1,15 +1,33 @@
 ﻿@inherits LayoutComponentBase
+@inject IHttpContextAccessor HttpContextAccessor
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>      
+    @if (HttpContextAccessor.HttpContext?.User.IsInRole("Admin") == true)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
+
+    <main>
         <article class="content px-4">
+
+            @if (HttpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true)
+            {
+                <div class="d-flex justify-content-end mt-3 mb-3">
+                    <a href="/auth/logout"
+                       class="btn btn-outline-secondary">
+                        Logg ut
+                    </a>
+                </div>
+            }
+
             @Body
+
         </article>
     </main>
+
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>

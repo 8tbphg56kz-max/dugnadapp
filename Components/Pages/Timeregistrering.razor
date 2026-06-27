@@ -12,23 +12,12 @@
 @inject IHttpContextAccessor HttpContextAccessor
 @layout MainLayout
 
-<AuthorizeView Roles="Admin">
-    <Authorized>
-        <h3 style="color:green">ADMIN</h3>
-    </Authorized>
-</AuthorizeView>
-
 <div class="d-flex align-items-center gap-3 mb-4">    
    
     <div>
         <h2 class="fw-bold mb-1">
             Registrering av <span class="dugnad-gronn">dugnadstimer</span>
-        </h2>
-
-        <p>
-            Er Admin:
-            @HttpContextAccessor.HttpContext?.User.IsInRole("Admin")
-        </p>
+        </h2>       
 
         <p class="text-muted mb-0">
             Fyll ut skjemaet under for å registrere din dugnadsinnsats
@@ -289,7 +278,7 @@ if (innloggetBeboer != null)
             BeboerId = beboerId
         };
 
-        StateHasChanged();
+        StateHasChanged();       
 
         await Task.Delay(5000);
 

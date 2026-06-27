@@ -1,27 +1,30 @@
-﻿@inherits LayoutComponentBase
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
 @inject IHttpContextAccessor HttpContextAccessor
 
 <div class="page">
 
-    @if (HttpContextAccessor.HttpContext?.User.IsInRole("Admin") == true)
-    {
-        <div class="sidebar">
-            <NavMenu />
-        </div>
-    }
+    <AuthorizeView Roles="Admin">
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+            </div>
+        </Authorized>
+    </AuthorizeView>
 
     <main>
         <article class="content px-4">
 
-            @if (HttpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated == true)
-            {
-                <div class="d-flex justify-content-end mt-3 mb-3">
-                    <a href="/auth/logout"
-                       class="btn btn-outline-secondary">
-                        Logg ut
-                    </a>
-                </div>
-            }
+            <AuthorizeView>
+                <Authorized>
+                    <div class="d-flex justify-content-end mt-3 mb-3">
+                        <a href="/auth/logout"
+                           class="btn btn-outline-secondary">
+                            Logg ut
+                        </a>
+                    </div>
+                </Authorized>
+            </AuthorizeView>
 
             @Body
 

@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: dugnadapp-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: dugnadapp
+      POSTGRES_USER: dugnaduser
+      POSTGRES_PASSWORD: CrLrce9PCdFEJezA
+
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+
+    networks:
+      - dugnad-network
+
+  dugnadapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: dugnadapp
+    restart: unless-stopped
+
+    depends_on:
+      - postgres
+
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+
+    ports:
+      - "8080:8080"
+
+    volumes:
+      - ./appsettings.Production.json:/app/appsettings.Production.json:ro
+
+    networks:
+      - dugnad-network
+
+networks:
+  dugnad-network:

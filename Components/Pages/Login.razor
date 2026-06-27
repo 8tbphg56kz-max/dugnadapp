@@ -12,6 +12,13 @@
 @inject NavigationManager Navigation
 @inject DugnadDbContext Db
 
+@if (!string.IsNullOrEmpty(TestMelding))
+{
+    <div class="alert alert-info">
+        @TestMelding
+    </div>
+}
+
 <div class="d-flex flex-column align-items-center"
      style="padding-top:8vh; min-height:100vh;">
 
@@ -102,6 +109,8 @@
 
 </div>
 @code {
+    private string TestMelding = "";
+
     private string Fornavn = "";
     private string Epost = "";
     private string Melding = "";
@@ -109,7 +118,7 @@
     private bool KodeSendt = false;   
 
     private async Task SendKode()
-    {
+    {        
         var beboer = await Db.Beboere
             .FirstOrDefaultAsync(x => x.Epost.ToLower() == Epost.ToLower());
 
@@ -143,6 +152,7 @@
         await EmailService.SendLoginCodeAsync(
     beboer.Epost,
     kode);
+ 
     }
 
     private void StartPåNytt()

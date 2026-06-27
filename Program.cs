@@ -50,6 +50,26 @@ builder.Services.AddScoped<EmailService>();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DugnadDbContext>();
+
+    try
+    {
+        Console.WriteLine(builder.Configuration.GetConnectionString("DefaultConnection"));
+
+        Console.WriteLine("Starter migrering...");
+
+        db.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("MIGRERING FEILET!");
+        Console.WriteLine(ex.ToString());
+        throw;
+    }
+}
+
 app.UseForwardedHeaders(
     new ForwardedHeadersOptions
     {
@@ -71,10 +91,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-app.UseAuthorization();
 
 app.UseAntiforgery();
 
